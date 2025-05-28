@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  db_new:
+    image: postgres:17  #pinned version for consistent setup instead of lastest
+    container_name: my-postgres-group 
+    ports:
+      - "5433:5432"  #using a different port to the mini project 
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./data/new-db:/var/lib/postgresql/data  #data persistence for new DB
+    networks:
+      - group-project
+
+  adminer_group: 
+    image: adminer:4.8.1  #pinned version for consistency
+    container_name: adminer_group  #using a unique container name to avoid conflict 
+    restart: always
+    ports:
+      - "8081:8080"  #using a different port to the mini project 
+    networks:
+      - group-project
+
+networks:
+  group-project:
+    driver: bridge

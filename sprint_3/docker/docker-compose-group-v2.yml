@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  db_new:
+    image: postgres:17  # pinned version for consistent setup
+    container_name: my-postgres-group 
+    ports:
+      - "5433:5432"  # different port from other projects
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./data/new-db:/var/lib/postgresql/data
+    networks:
+      - group-project
+
+  adminer_group: 
+    image: adminer:4.8.1
+    container_name: adminer_group
+    restart: always
+    ports:
+      - "8081:8080"
+    networks:
+      - group-project
+
+  grafana_group:
+    image: grafana/grafana:10.3.1  # or latest stable
+    container_name: grafana_group
+    ports:
+      - "3001:3000"  # different from default 3000 to avoid conflict
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # change in production
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - group-project
+    depends_on:
+      - db_new
+
+networks:
+  group-project:
+    driver: bridge
+
+volumes:
+  grafana_data:

@@ -1,0 +1,14 @@
+Changes Table structure to replace drink type and flavour with simply product name which includes the flavour. -Easier to create queries this way. 
+    - Changed transform code to produce just product name and price. 
+    - Since we cannot have any null values it make sense to do this. 
+
+Added items id to transaction ID so we have a unique id for each item from the order, if the same product appears twice we can generate 
+different ids for them. Also moves away from composite keys and keeps relation ships through via foreign keys.  
+    -Changed the transform code to reflect this as well 
+
+Changed the GUIDs function to create hashed GUIDs based on our columns values for each row this means we will get a
+unique ID for transactions, transaction items. But also if the column values are the same such branch name it will produce the same ID
+which will not be added to the tables therefore avoiding duplication the same goes for our products table. 
+    - Tested. 
+
+Created a function that runs our SQL script and creates the tables prior to inserting our transformed data. 

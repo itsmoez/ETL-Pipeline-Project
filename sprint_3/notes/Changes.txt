@@ -1,0 +1,52 @@
+Make sure you do docker stop adminer_group, my-postgres-group 
+then docker rm adminer_group, my-postgres-group
+
+Then run the files from data to to make sure you have data to visualize
+
+Query for Total Revenue by Branch
+
+SELECT
+  b.branch_name,
+  SUM(t.total) AS total_branch_sales
+FROM transactions t
+JOIN branches b ON t.branch_id = b.branch_id
+GROUP BY b.branch_name
+ORDER BY total_branch_sales DESC;
+
+Query for Totals 10 products by Units Sold
+
+SELECT
+  p.product_name,
+  COUNT(*) AS units_sold
+FROM transaction_items ti
+JOIN products p ON ti.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY units_sold DESC
+LIMIT 10;
+
+Query for Top 10 Grossing Products
+
+SELECT
+  p.product_name,
+  SUM(ti.price) AS total_product_revenue
+FROM transaction_items ti
+JOIN products p ON ti.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY total_product_revenue DESC
+LIMIT 10;
+
+Query for Order Count by Payment as a percentage
+
+SELECT
+  trans_type AS payment_method,
+  COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() AS percentage_of_orders
+FROM transactions
+GROUP BY trans_type;
+
+Query for Total Revenue by Payment Method
+
+SELECT
+  trans_type AS payment_method,
+  SUM(total) AS total_revenue
+FROM transactions
+GROUP BY trans_type;
