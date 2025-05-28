@@ -1,0 +1,7 @@
+Need to find a way to automate adding dotenv file to AWS's Lamnda environmental variables. 
+Unable to connect to database via AWS Lambda - needs more research leave for the future. 
+Everything else works, if you need to run certain modules you need to sepcify them in the requirements text file. 
+
+Succesfully ran the ETL Stack and Deployment bucket. 
+Unable to connect to the database from AWS as it is a local host would most likely need to to use an EC2 instance which is part 
+of the next step anyway. The only difference being that we will begin loading to our redshit database. 

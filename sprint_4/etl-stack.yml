@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda ETL function with S3 event trigger for processing CSV files.
+
+Parameters:
+  YourName:
+    Type: String
+    Description: Team name 
+    Default: The-Brews-Brothers
+  NetworkStackName:
+    Type: String
+    Default: project-networking
+    Description: Network stack with VPC containing Redshift instance
+
+Resources:
+  EtlLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${YourName}-etl-lambda'
+      Runtime: python3.12
+      Handler: super_cafe_etl_lambda.lambda_handler
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda-execution-role'
+      Timeout: 30
+      ReservedConcurrentExecutions: 10
+      Code: ./src
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref 'AWS::NoValue'
+        SubnetIds:
+          - !Ref 'AWS::NoValue'
+      Tags:
+        - Key: Name
+          Value: !Sub '${YourName}-etl-lambda'
+
+  RawDataBucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+      - EtlLambdaFunction
+      - RawDataBucketPermission
+    Properties:
+      BucketName: !Sub '${YourName}-raw-data'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt EtlLambdaFunction.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub '${YourName}-raw-data'
+
+  RawDataBucketPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref EtlLambdaFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub 'arn:aws:s3:::${YourName}-raw-data'
+
+  RawDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref RawDataBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowSSLRequestsOnly"
+            Action: "s3:*"
+            Principal: "*"
+            Effect: "Deny"
+            Resource:
+              - !Sub "arn:aws:s3:::${YourName}-raw-data"
+              - !Sub "arn:aws:s3:::${YourName}-raw-data/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+          - Sid: "AllowLambdaToRead"
+            Action: "s3:GetObject"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/lambda-execution-role"
+            Effect: "Allow"
+            Resource: !Sub "arn:aws:s3:::${YourName}-raw-data/*"
+ 

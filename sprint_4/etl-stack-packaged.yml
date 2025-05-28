@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda ETL function with S3 event trigger for processing CSV files.
+Parameters:
+  YourName:
+    Type: String
+    Description: Team name
+    Default: The-Brews-Brothers
+  NetworkStackName:
+    Type: String
+    Default: project-networking
+    Description: Network stack with VPC containing Redshift instance
+Resources:
+  EtlLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${YourName}-etl-lambda
+      Runtime: python3.12
+      Handler: super_cafe_etl_lambda.lambda_handler
+      Role:
+        Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/lambda-execution-role
+      Timeout: 30
+      ReservedConcurrentExecutions: 10
+      Code:
+        S3Bucket: guled-macallin-deployment-bucket
+        S3Key: 113f46772623aa05bcbf625ebc137108
+      VpcConfig:
+        SecurityGroupIds:
+        - Ref: AWS::NoValue
+        SubnetIds:
+        - Ref: AWS::NoValue
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${YourName}-etl-lambda
+  RawDataBucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+    - EtlLambdaFunction
+    - RawDataBucketPermission
+    Properties:
+      BucketName:
+        Fn::Sub: ${YourName}-raw-data
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: s3:ObjectCreated:*
+          Function:
+            Fn::GetAtt:
+            - EtlLambdaFunction
+            - Arn
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${YourName}-raw-data
+  RawDataBucketPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: EtlLambdaFunction
+      Principal: s3.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:s3:::${YourName}-raw-data
+  RawDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: RawDataBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AllowSSLRequestsOnly
+          Action: s3:*
+          Principal: '*'
+          Effect: Deny
+          Resource:
+          - Fn::Sub: arn:aws:s3:::${YourName}-raw-data
+          - Fn::Sub: arn:aws:s3:::${YourName}-raw-data/*
+          Condition:
+            Bool:
+              aws:SecureTransport: 'false'
+        - Sid: AllowLambdaToRead
+          Action: s3:GetObject
+          Principal:
+            AWS:
+              Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/lambda-execution-role
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:aws:s3:::${YourName}-raw-data/*

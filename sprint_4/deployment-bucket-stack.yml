@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  The Brews Brothers deployment bucket
+
+Parameters:
+  YourName:
+    Type: String
+    Description: Enter name, formatted first-last, used for bucket name
+    Default: the-brew-brothers
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${YourName}-deployment-bucket'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${YourName}-deployment-bucket'
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${YourName}-deployment-bucket"
+              - !Sub "arn:aws:s3:::${YourName}-deployment-bucket/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+ 
